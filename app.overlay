@@ -1,0 +1,15 @@
+/*
+ * Copyright (c) 2019 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+&i2c0 {
+	icm20948@68 {
+		compatible = "invensense,icm20948";
+		reg = <0x68>;
+		status = "okay";
+	};
+};
+
+

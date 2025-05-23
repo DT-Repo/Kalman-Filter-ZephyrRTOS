@@ -1,0 +1,9 @@
+# Copyright (c) 2020 TDK Invensense
+# SPDX-License-Identifier: Apache-2.0
+
+description: ICM-20948 motion tracking device
+
+# ICM-20948 is I2C.
+compatible: "invensense,icm20948"
+
+include: [sensor-device.yaml, i2c-device.yaml]
