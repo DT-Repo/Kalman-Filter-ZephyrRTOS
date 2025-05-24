@@ -13,17 +13,22 @@
 
 //#include "icm20948_reg.h"
 
+#include "icm20948_setup.h"
+#include "icm20948_i2c.h"
+
 /* typedef void (*tap_fetch_t)(const struct device *dev);
 int icm20948_tap_fetch(const struct device *dev); */
 
 struct icm20948_data {
 	//uint8_t fifo_data[HARDWARE_FIFO_SIZE];
-
+	//ICM_20948_Serif_t serif;
+	ICM_20948_Device_t driver;
+	uint8_t imu_whoami;
 	int16_t accel_x;
 	int16_t accel_y;
 	int16_t accel_z;
 	uint16_t accel_fss;
-	//uint16_t accel_hz;
+	uint16_t accel_hz;
 	//uint16_t accel_sf;
 
 	int16_t temp;
@@ -32,7 +37,7 @@ struct icm20948_data {
 	int16_t gyro_y;
 	int16_t gyro_z;
 	uint16_t gyro_fss;
-	//uint16_t gyro_hz;
+	uint16_t gyro_hz;
 	//uint16_t gyro_sf;
 	// Note: Magnetomter is added to standard icm's imu data structure
 	int16_t magn_x;
@@ -67,11 +72,6 @@ struct icm20948_data {
 struct icm20948_config {
 	struct i2c_dt_spec i2c;
 	//struct gpio_dt_spec gpio_int;
-
-/* 	uint16_t accel_hz;
-	uint16_t gyro_hz;
-	uint16_t accel_fs;
-	uint16_t gyro_fs; */
 };
 
 /* int icm20948_trigger_set(const struct device *dev,
