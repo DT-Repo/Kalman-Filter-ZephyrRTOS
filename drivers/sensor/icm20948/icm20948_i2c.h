@@ -9,8 +9,8 @@
 
 #include <zephyr/device.h>
 #include <zephyr/drivers/i2c.h>
-#include "util/ICM_20948_C.h"
-#include "util/AK09916_REGISTERS.h"
+#include "hal/ICM_20948_C.h"
+#include "hal/AK09916_REGISTERS.h"
 #include <zephyr/sys/printk.h>
 
 #define MAX_MAGNETOMETER_STARTS     10

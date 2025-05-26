@@ -9,8 +9,8 @@
 
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
-#include "util/ICM_20948_C.h"
-#include "util/AK09916_REGISTERS.h"
+#include "hal/ICM_20948_C.h"
+#include "hal/AK09916_REGISTERS.h"
 #include <zephyr/sys/printk.h>
 
 int icm20948_sensor_init(const struct device *dev);

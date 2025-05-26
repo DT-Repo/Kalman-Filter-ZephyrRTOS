@@ -13,7 +13,6 @@
 
 #include "icm20948.h"
 //#include "icm20948_reg.h"
-//#include "icm20948_utils.h"
 
 extern struct device *i2c_dev;
 LOG_MODULE_REGISTER(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
@@ -396,6 +395,7 @@ static int icm20948_data_init(struct icm20948_data *data,
 			      const struct icm20948_config *cfg)
 {
 	data->imu_whoami = ICM_20948_WHOAMI;
+	memset(&data->driver, 0, sizeof(data->driver));
 	data->accel_x = 0;
 	data->accel_y = 0;
 	data->accel_z = 0;
