@@ -12,21 +12,16 @@
 LOG_MODULE_DECLARE(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
 #define LOG_I2C_ENABLE  0
 
-#define LOG_DBG(fmt, ...) printk(fmt, ##__VA_ARGS__)
-#define LOG_INF(fmt, ...) printk(fmt, ##__VA_ARGS__)
-#define LOG_WRN(fmt, ...) printk(fmt, ##__VA_ARGS__)
-#define LOG_ERR(fmt, ...) printk(fmt, ##__VA_ARGS__)
-
 #if LOG_I2C_ENABLE
 #define LOG_I2C(fmt, ...) printk(fmt, ##__VA_ARGS__)
 #else
 #define LOG_I2C(fmt, ...)
-#endif
+#endif 
 
 ICM_20948_Status_e status;
-uint8_t imu_i2c_addr = ICM20948_I2C_ADDR;
-struct device *i2c_dev = DEVICE_DT_GET_ONE(invensense_icm20948);
-
+extern const struct icm20948_config *gCfg;
+//const struct device *i2c_dev = DEVICE_DT_GET_ANY(invensense_icm20948);
+//const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
 //#if CONFIG_I2C
 static int icm20948_bus_check_i2c(const union icm20948_bus *bus)
 {
@@ -73,7 +68,7 @@ ICM_20948_Status_e my_write_i2c(uint8_t reg, uint8_t *data, uint32_t len, void *
 	}
 	LOG_I2C("\n");
 
-	if (0 == i2c_transfer(i2c_dev, msg, 2, imu_i2c_addr))
+	if (0 == i2c_transfer(gCfg->i2c.bus, msg, 2, gCfg->i2c.addr))
 	{
 		ret = ICM_20948_Stat_Ok;
 	}
@@ -89,9 +84,9 @@ ICM_20948_Status_e my_read_i2c(uint8_t reg, uint8_t *buff, uint32_t len, void *u
 {
 	ICM_20948_Status_e ret = ICM_20948_Stat_Err;
 
-	if (0 == i2c_write(i2c_dev, &reg, 1, imu_i2c_addr))
+	if (0 == i2c_write(gCfg->i2c.bus, &reg, 1, gCfg->i2c.addr))
 	{
-		if (0 == i2c_read(i2c_dev, buff, len, imu_i2c_addr))
+		if (0 == i2c_read(gCfg->i2c.bus, buff, len, gCfg->i2c.addr))
 		{
 			LOG_I2C("< R %d bytes from 0x%2x:\t", len, reg);
 			for (int i = 0; i < len; i++)

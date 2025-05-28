@@ -14,7 +14,6 @@
 #include <zephyr/sys/printk.h>
 
 #define MAX_MAGNETOMETER_STARTS     10
-#define ICM20948_I2C_ADDR			0x68
 
 union icm20948_bus {
 #if CONFIG_SPI

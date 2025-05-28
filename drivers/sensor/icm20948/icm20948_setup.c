@@ -23,7 +23,7 @@ LOG_MODULE_DECLARE(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
 
 int icm20948_set_fs(const struct device *dev, uint16_t a_sf, uint16_t g_sf)
 {
-	const struct icm20948_config *cfg = dev->config;
+	//const struct icm20948_config *cfg = dev->config;
 	struct icm20948_data *drv_data = dev->data;
 	ICM_20948_Device_t *driver = &(drv_data->driver);
 	int result;
@@ -42,18 +42,15 @@ int icm20948_set_fs(const struct device *dev, uint16_t a_sf, uint16_t g_sf)
 
 int icm20948_set_odr(const struct device *dev, uint16_t a_rate, uint16_t g_rate)
 {
-	const struct icm20948_config *cfg = dev->config;
+	//const struct icm20948_config *cfg = dev->config;
 	struct icm20948_data *drv_data = dev->data;
 	ICM_20948_Device_t *driver = &(drv_data->driver);
 	ICM_20948_smplrt_t mySMPLRTcfg;
-	int result;
+	int result = 0;
 
 	mySMPLRTcfg.a = a_rate;
 	mySMPLRTcfg.g = g_rate;
-	ICM_20948_set_sample_rate(driver, (ICM_20948_InternalSensorID_bm)(ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), mySMPLRTcfg);
-	if (result) {
-		return result;
-	}
+	result = ICM_20948_set_sample_rate(driver, (ICM_20948_InternalSensorID_bm)(ICM_20948_Internal_Acc | ICM_20948_Internal_Gyr), mySMPLRTcfg);
 
 	return result;
 }
@@ -61,37 +58,43 @@ int icm20948_set_odr(const struct device *dev, uint16_t a_rate, uint16_t g_rate)
 
 int icm20948_sensor_init(const struct device *dev)
 {
-	int result = 0;
+	//int result = 0;
 	struct icm20948_data *drv_data = dev->data;
 	ICM_20948_Device_t *driver = &(drv_data->driver);
-	const struct icm20948_config *config = dev->config;
-	int err = 0;
+	//const struct icm20948_config *config = dev->config;
+	//int err = 0;
 
 	drv_data->accel_fss = gpm2;
 	drv_data->gyro_fss = dps250;
 	drv_data->gyro_hz = 1;
 	drv_data->accel_hz = 1;
 
+	ICM_20948_init_struct(driver);
 	/* Initialize serial interface and device */
 	driver->_serif = &icm20948_Serif;
-
-	ICM_20948_init_struct(driver);
 	
-	if (err < 0) {
+/* 	if (err < 0) {
 		LOG_ERR("Init failed: %d", err);
 		return err;
-	}
+	} */
 
-	uint8_t whoami = 0x00;
+/* 	uint8_t whoami = 0x00;
 	err = ICM_20948_get_who_am_i(driver, &whoami);
 	if (whoami != ICM_20948_WHOAMI)
 	{
 		return ICM_20948_Stat_WrongID;
+	} */
+	
+	while (ICM_20948_check_id(driver) != ICM_20948_Stat_Ok)
+	{
+        //TODO add a timeout or max retries
+		LOG_INF("whoami does not match. Halting...");
+		k_sleep(K_SECONDS(1));
 	}
-	if (err < 0) {
+/* 	if (err < 0) {
 		LOG_ERR("ID read failed: %d", err);
 		return err;
-	}
+	} */
 
 /* 	if (data->chip_id != data->imu_whoami) {
 		LOG_ERR("invalid WHO_AM_I value, was 0x%x but expected 0x%x for %s", data->chip_id,
@@ -261,7 +264,7 @@ int icm20948_turn_off_fifo(const struct device *dev)
 int icm20948_turn_on_sensor(const struct device *dev)
 {
 	struct icm20948_data *drv_data = dev->data;
-	const struct icm20948_config *cfg = dev->config;
+	//const struct icm20948_config *cfg = dev->config;
 	ICM_20948_Device_t *driver = &(drv_data->driver);
 	int result = 0;
 

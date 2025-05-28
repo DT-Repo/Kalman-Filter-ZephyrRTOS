@@ -14,7 +14,6 @@
 #include "icm20948.h"
 //#include "icm20948_reg.h"
 
-extern struct device *i2c_dev;
 LOG_MODULE_REGISTER(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
 
 /* static const uint16_t icm20948_gyro_sensitivity_x10[] = {
@@ -31,19 +30,19 @@ static void icm20948_convert_accel(struct sensor_value *val,
 	switch (fss)
 	{
 	case 0:
-	  conv_val = ((float)raw_val) / 16.384;
+	  conv_val = ((float)raw_val) / 16.384f;
 	  break;
 	case 1:
-	  conv_val = ((float)raw_val) / 8.192;
+	  conv_val = ((float)raw_val) / 8.192f;
 	  break;
 	case 2:
-	  conv_val = ((float)raw_val) / 4.096;
+	  conv_val = ((float)raw_val) / 4.096f;
 	  break;
 	case 3:
-	  conv_val = ((float)raw_val) / 2.048;
+	  conv_val = ((float)raw_val) / 2.048f;
 	  break;
 	default:
-	  return 0;
+	  conv_val = 0;
 	  break;
 	}
 
@@ -73,16 +72,16 @@ static void icm20948_convert_gyro(struct sensor_value *val,
 	  conv_val = ((float)raw_val) / 131;
 	  break;
 	case 1:
-	  conv_val = ((float)raw_val) / 65.5;
+	  conv_val = ((float)raw_val) / 65.5f;
 	  break;
 	case 2:
-	  conv_val = ((float)raw_val) / 32.8;
+	  conv_val = ((float)raw_val) / 32.8f;
 	  break;
 	case 3:
-	  conv_val = ((float)raw_val) / 16.4;
+	  conv_val = ((float)raw_val) / 16.4f;
 	  break;
 	default:
-	  return 0;
+	  conv_val = 0;
 	  break;
 	}
 	val->val1 = (int32_t)conv_val; 
@@ -102,7 +101,7 @@ static inline void icm20948_convert_temp(struct sensor_value *val,
 					 int16_t raw_val)
 {
 	float conv_val;
-	conv_val = (float)raw_val / 333.87;
+	conv_val = (float)raw_val / 333.87f;
 /* 	val->val1 = (((int64_t)raw_val * 100) / 333) + 87;
 	val->val2 = ((((int64_t)raw_val * 100) % 207) * 1000000) / 207; */
 
@@ -123,7 +122,7 @@ static inline void icm20948_convert_magn(struct sensor_value *val,
 	int16_t raw_val)
 {
 	float conv_val;
-	conv_val = (float)raw_val * 0.15;
+	conv_val = (float)raw_val * 0.15f;
 	
 	val->val1 = (int32_t)conv_val; 
     val->val2 = (int32_t)((conv_val - val->val1) * 1000000); 
@@ -256,8 +255,7 @@ static int icm20948_sample_fetch(const struct device *dev,
 {
 	struct icm20948_data *drv_data = dev->data;
 	ICM_20948_Device_t *driver = &(drv_data->driver);
-	//const struct icm20948_config *cfg = dev->config;
-	ICM_20948_AGMT_t agmt = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0}};
+	ICM_20948_AGMT_t agmt = {0};
 
 	 ICM_20948_Status_e ret_gmt = ICM_20948_get_agmt(driver, &agmt);
 	if (ret_gmt == ICM_20948_Stat_Ok){
@@ -282,7 +280,7 @@ static int icm20948_attr_set(const struct device *dev,
 			     enum sensor_attribute attr,
 			     const struct sensor_value *val)
 {
-	struct icm20948_data *drv_data = dev->data;
+	//struct icm20948_data *drv_data = dev->data;
 
 	__ASSERT_NO_MSG(val != NULL);
 
@@ -349,7 +347,7 @@ static int icm20948_attr_get(const struct device *dev,
 			     enum sensor_attribute attr,
 			     struct sensor_value *val)
 {
-	const struct icm20948_data *drv_data = dev->data;
+	//const struct icm20948_data *drv_data = dev->data;
 
 	__ASSERT_NO_MSG(val != NULL);
 
@@ -394,7 +392,6 @@ static int icm20948_attr_get(const struct device *dev,
 static int icm20948_data_init(struct icm20948_data *data,
 			      const struct icm20948_config *cfg)
 {
-	data->imu_whoami = ICM_20948_WHOAMI;
 	memset(&data->driver, 0, sizeof(data->driver));
 	data->accel_x = 0;
 	data->accel_y = 0;
@@ -419,24 +416,24 @@ static int icm20948_data_init(struct icm20948_data *data,
 	return 0;
 }
 
-
+const struct icm20948_config *gCfg;
 static int icm20948_init(const struct device *dev)
 {
 	struct icm20948_data *drv_data = dev->data;
 	const struct icm20948_config *cfg = dev->config;
-	ICM_20948_Device_t *driver = &(drv_data->driver);
-	int res;
+	gCfg = cfg;
+	//ICM_20948_Device_t *driver = &(drv_data->driver);
+	int res = 0;
 	
 	if (!device_is_ready(cfg->i2c.bus)) {
 		LOG_ERR("Bus device is not ready");
 		return -ENODEV;
 	}
 
+    i2c_configure(cfg->i2c.bus, I2C_SPEED_SET(I2C_SPEED_STANDARD) | I2C_MODE_CONTROLLER);
 
-    i2c_configure(i2c_dev, I2C_SPEED_SET(I2C_SPEED_STANDARD));
-
-    if (!i2c_dev) {
-        // LOG_ERR("I2C device not valid.");
+    if (!cfg->i2c.bus) {
+        LOG_ERR("I2C device not valid.");
         return ICM_20948_Stat_Err;
     }
 
@@ -446,7 +443,6 @@ static int icm20948_init(const struct device *dev)
 		LOG_ERR("could not initialize sensor");
 		return -EIO;
 	}
-
 
 	res |= icm20948_turn_on_sensor(dev);
 
@@ -471,41 +467,6 @@ static DEVICE_API(sensor, icm20948_driver_api) = {
 	.attr_set = icm20948_attr_set,
 	.attr_get = icm20948_attr_get,
 };
-
-/* //.gpio_int = GPIO_DT_SPEC_INST_GET(index, int_gpios),    
-#define ICM20948_DEFINE_CONFIG(index)					\
-	static const struct icm20948_config icm20948_cfg_##index = {	\
-		.i2c = I2C_DT_SPEC_INST_GET(index),			\	
-		.accel_hz = DT_INST_PROP(index, accel_hz),		\
-		.gyro_hz = DT_INST_PROP(index, gyro_hz),		\
-		.accel_fs = DT_INST_ENUM_IDX(index, accel_fs),		\
-		.gyro_fs = DT_INST_ENUM_IDX(index, gyro_fs),		\
-	};
-
-
-#define ICM20948_INIT(index)						\
-	ICM20948_DEFINE_CONFIG(index);					\
-	static struct icm20948_data icm20948_driver_##index;		\
-	SENSOR_DEVICE_DT_INST_DEFINE(index, icm20948_init,		\
-			    NULL,					\
-			    &icm20948_driver_##index,			\
-			    &icm20948_cfg_##index, POST_KERNEL,		\
-			    CONFIG_SENSOR_INIT_PRIORITY,		\
-			    &icm20948_driver_api);
-
-DT_INST_FOREACH_STATUS_OKAY(ICM20948_INIT) */
-
-
-
-
-
-/* 	.accel_hz = DT_INST_PROP(index, accel_hz),		\
-	.gyro_hz = DT_INST_PROP(index, gyro_hz),		\
-	.accel_fs = DT_INST_ENUM_IDX(index, accel_fs),		\
-	.gyro_fs = DT_INST_ENUM_IDX(index, gyro_fs),		\ */
-
-
-
 
 	
 #define INIT_ICM20948_INST(inst)						\
