@@ -14,10 +14,38 @@
 //#include "icm20948_reg.h"
 
 #include "icm20948_setup.h"
-#include "icm20948_i2c.h"
 
 /* typedef void (*tap_fetch_t)(const struct device *dev);
 int icm20948_tap_fetch(const struct device *dev); */
+
+union icm20948_bus {
+#if CONFIG_SPI
+	struct spi_dt_spec spi;
+#endif
+#if CONFIG_I2C
+	struct i2c_dt_spec i2c;
+#endif
+};
+
+typedef int (*icm20948_bus_check_fn)(const union icm20948_bus *bus);
+typedef int (*icm20948_reg_read_fn)(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
+				    uint32_t size);
+typedef int (*icm20948_reg_write_fn)(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
+				     uint32_t size);
+
+struct icm20948_bus_io {
+	icm20948_bus_check_fn check;
+	icm20948_reg_read_fn read;
+	icm20948_reg_write_fn write;
+};
+
+#if CONFIG_SPI
+extern const struct icm20948_bus_io icm20948_bus_io_spi;
+#endif
+
+#if CONFIG_I2C
+extern const struct icm20948_bus_io icm20948_bus_io_i2c;
+#endif
 
 struct icm20948_data {
 	//uint8_t fifo_data[HARDWARE_FIFO_SIZE];
@@ -66,7 +94,8 @@ struct icm20948_data {
 };
 
 struct icm20948_config {
-	struct i2c_dt_spec i2c;
+	union icm20948_bus bus;
+	const struct icm20948_bus_io *bus_io;
 	//struct gpio_dt_spec gpio_int;
 };
 

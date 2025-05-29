@@ -12,6 +12,7 @@
 #include <zephyr/logging/log.h>
 
 #include "icm20948.h"
+#include "icm20948_i2c.h"
 //#include "icm20948_reg.h"
 
 LOG_MODULE_REGISTER(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
@@ -425,14 +426,14 @@ static int icm20948_init(const struct device *dev)
 	//ICM_20948_Device_t *driver = &(drv_data->driver);
 	int res = 0;
 	
-	if (!device_is_ready(cfg->i2c.bus)) {
+	if (!device_is_ready(cfg->bus.i2c.bus)) {
 		LOG_ERR("Bus device is not ready");
 		return -ENODEV;
 	}
 
-    i2c_configure(cfg->i2c.bus, I2C_SPEED_SET(I2C_SPEED_STANDARD) | I2C_MODE_CONTROLLER);
+    i2c_configure(cfg->bus.i2c.bus, I2C_SPEED_SET(I2C_SPEED_STANDARD) | I2C_MODE_CONTROLLER);
 
-    if (!cfg->i2c.bus) {
+    if (!cfg->bus.i2c.bus) {
         LOG_ERR("I2C device not valid.");
         return ICM_20948_Stat_Err;
     }
@@ -468,11 +469,21 @@ static DEVICE_API(sensor, icm20948_driver_api) = {
 	.attr_get = icm20948_attr_get,
 };
 
-	
+/* Initializes the bus members for an instance on a SPI bus. */
+#define ICM20948_CONFIG_SPI(inst)                                                                  \
+	{.bus.spi = SPI_DT_SPEC_INST_GET(inst, ICM20948_SPI_CFG, 0),                               \
+	 .bus_io = &icm20948_bus_io_spi}
+
+/* Initializes the bus members for an instance on an I2C bus. */
+/* #define ICM20948_CONFIG_I2C(inst)                                                                  \
+	{.bus.i2c = I2C_DT_SPEC_INST_GET(inst),                                                    \
+	 .bus_io = &icm20948_bus_io_i2c} */
+	 	
 #define INIT_ICM20948_INST(inst)						\
 	static struct icm20948_data icm20948_data_##inst;			\
 	static const struct icm20948_config icm20948_cfg_##inst = {	\
-	.i2c = I2C_DT_SPEC_INST_GET(inst),				\
+				.bus.i2c = I2C_DT_SPEC_INST_GET(inst),                                                    \
+	 			.bus_io = &icm20948_bus_io_i2c \
 	};								\
 									\
 	SENSOR_DEVICE_DT_INST_DEFINE(inst, icm20948_init, NULL,		\

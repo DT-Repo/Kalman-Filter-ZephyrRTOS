@@ -12,39 +12,11 @@
 #include "hal/ICM_20948_C.h"
 #include "hal/AK09916_REGISTERS.h"
 #include <zephyr/sys/printk.h>
+#include "icm20948.h"
 
 #define MAX_MAGNETOMETER_STARTS     10
 
-union icm20948_bus {
-#if CONFIG_SPI
-	struct spi_dt_spec spi;
-#endif
-//#if CONFIG_I2C
-	struct i2c_dt_spec i2c;
-//#endif
-};
-
-typedef int (*icm20948_bus_check_fn)(const union icm20948_bus *bus);
-typedef int (*icm20948_reg_read_fn)(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
-				    uint32_t size);
-typedef int (*icm20948_reg_write_fn)(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
-				     uint32_t size);
-
-struct icm20948_bus_io {
-	icm20948_bus_check_fn check;
-	icm20948_reg_read_fn read;
-	icm20948_reg_write_fn write;
-};
-
-//#if CONFIG_SPI
-extern const struct icm20948_bus_io icm20948_bus_io_spi;
-//#endif
-
 #if CONFIG_I2C
-extern const struct icm20948_bus_io icm20948_bus_io_i2c;
-#endif
-
-//#if CONFIG_I2C
 static int icm20948_bus_check_i2c(const union icm20948_bus *bus);
 static int icm20948_reg_read_i2c(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
 				 uint32_t size);
@@ -52,7 +24,8 @@ static int icm20948_reg_write_i2c(const union icm20948_bus *bus, uint8_t reg, ui
 				  uint32_t size);
 ICM_20948_Status_e my_write_i2c(uint8_t reg, uint8_t *data, uint32_t len, void *user);
 ICM_20948_Status_e my_read_i2c(uint8_t reg, uint8_t *buff, uint32_t len, void *user);
-//#endif
+
+#endif
 
 //#if MAGNETOMETER
 ICM_20948_Status_e startupMagnetometer(const struct device *dev, bool minimal);

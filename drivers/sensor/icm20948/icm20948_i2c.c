@@ -22,7 +22,7 @@ ICM_20948_Status_e status;
 extern const struct icm20948_config *gCfg;
 //const struct device *i2c_dev = DEVICE_DT_GET_ANY(invensense_icm20948);
 //const struct device *i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
-//#if CONFIG_I2C
+#if CONFIG_I2C
 static int icm20948_bus_check_i2c(const union icm20948_bus *bus)
 {
 	return device_is_ready(bus->i2c.bus) ? 0 : -ENODEV;
@@ -31,13 +31,14 @@ static int icm20948_bus_check_i2c(const union icm20948_bus *bus)
 static int icm20948_reg_read_i2c(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
 				 uint32_t size)
 {
-	return i2c_burst_read_dt(&bus->i2c, reg, buf, size);
+	//return i2c_burst_read_dt(&bus->i2c, reg, buf, size);
+  return my_read_i2c(reg, buf, size, NULL);
 }
 
 static int icm20948_reg_write_i2c(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
 				  uint32_t size)
 {
-	return i2c_burst_write_dt(&bus->i2c, reg, buf, size);
+	return my_read_i2c(reg, buf, size, NULL);
 }
 
 const struct icm20948_bus_io icm20948_bus_io_i2c = {
@@ -68,7 +69,7 @@ ICM_20948_Status_e my_write_i2c(uint8_t reg, uint8_t *data, uint32_t len, void *
 	}
 	LOG_I2C("\n");
 
-	if (0 == i2c_transfer(gCfg->i2c.bus, msg, 2, gCfg->i2c.addr))
+	if (0 == i2c_transfer(gCfg->bus.i2c.bus, msg, 2, gCfg->bus.i2c.addr))
 	{
 		ret = ICM_20948_Stat_Ok;
 	}
@@ -84,9 +85,9 @@ ICM_20948_Status_e my_read_i2c(uint8_t reg, uint8_t *buff, uint32_t len, void *u
 {
 	ICM_20948_Status_e ret = ICM_20948_Stat_Err;
 
-	if (0 == i2c_write(gCfg->i2c.bus, &reg, 1, gCfg->i2c.addr))
+	if (0 == i2c_write(gCfg->bus.i2c.bus, &reg, 1, gCfg->bus.i2c.addr))
 	{
-		if (0 == i2c_read(gCfg->i2c.bus, buff, len, gCfg->i2c.addr))
+		if (0 == i2c_read(gCfg->bus.i2c.bus, buff, len, gCfg->bus.i2c.addr))
 		{
 			LOG_I2C("< R %d bytes from 0x%2x:\t", len, reg);
 			for (int i = 0; i < len; i++)
@@ -319,4 +320,4 @@ ICM_20948_Status_e resetMag(const struct device *dev)
   status = i2cMasterSingleW(dev, MAG_AK09916_I2C_ADDR, AK09916_REG_CNTL3, SRST);
   return status;
 }
-//#endif
+#endif
