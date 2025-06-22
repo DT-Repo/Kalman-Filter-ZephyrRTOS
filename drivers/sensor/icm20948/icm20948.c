@@ -6,8 +6,6 @@
 
 #define DT_DRV_COMPAT invensense_icm20948
 
-//#include <zephyr/init.h>
-//#include <zephyr/sys/byteorder.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
@@ -431,8 +429,6 @@ static int icm20948_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-    i2c_configure(cfg->bus.i2c.bus, I2C_SPEED_SET(I2C_SPEED_STANDARD) | I2C_MODE_CONTROLLER);
-
     if (!cfg->bus.i2c.bus) {
         LOG_ERR("I2C device not valid.");
         return ICM_20948_Stat_Err;
@@ -470,9 +466,9 @@ static DEVICE_API(sensor, icm20948_driver_api) = {
 };
 
 /* Initializes the bus members for an instance on a SPI bus. */
-#define ICM20948_CONFIG_SPI(inst)                                                                  \
+/* #define ICM20948_CONFIG_SPI(inst)                                                                  \
 	{.bus.spi = SPI_DT_SPEC_INST_GET(inst, ICM20948_SPI_CFG, 0),                               \
-	 .bus_io = &icm20948_bus_io_spi}
+	 .bus_io = &icm20948_bus_io_spi} */
 
 /* Initializes the bus members for an instance on an I2C bus. */
 /* #define ICM20948_CONFIG_I2C(inst)                                                                  \

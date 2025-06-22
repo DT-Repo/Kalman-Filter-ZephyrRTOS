@@ -27,6 +27,19 @@ union icm20948_bus {
 #endif
 };
 
+/* static inline int icm20948_reg_read(const struct device *dev, uint8_t reg, uint8_t *buf,
+				    uint32_t size)
+{
+	const struct icm20948_config *cfg = dev->config;
+
+	return cfg->bus_io->read(&cfg->bus, reg, buf, size);
+}
+
+static inline int inv_io_hal_read_reg(const struct device *dev, uint8_t reg, uint8_t *rbuffer, uint32_t rlen)
+{
+	return icm20948_reg_read(dev, reg, rbuffer, rlen);
+} */
+
 typedef int (*icm20948_bus_check_fn)(const union icm20948_bus *bus);
 typedef int (*icm20948_reg_read_fn)(const union icm20948_bus *bus, uint8_t reg, uint8_t *buf,
 				    uint32_t size);

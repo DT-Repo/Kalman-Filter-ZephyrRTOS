@@ -10,6 +10,8 @@
 int main(void)
 {
 	printf("Kalman filter START\n");
+	fusion_init(&kalm_drv);
+	
 	while (1)
 	{
 		fusion_demo(&kalm_drv);

@@ -42,6 +42,12 @@ static struct zsl_fus_drv kalm_drv = {
     .config = &kalm_cfg,
 };
 
+void fusion_init(struct zsl_fus_drv *drv)
+{
+	/* Init filter at 100 Hz. */
+	drv->init_handler(100.0, drv->config);
+}
+
 void fusion_demo(struct zsl_fus_drv *drv)
 {
     struct zsl_quat q = {.r = 1.0, .i = 0.0, .j = 0.0, .k = 0.0};
@@ -80,9 +86,6 @@ void fusion_demo(struct zsl_fus_drv *drv)
     gv.data[0] = sensor_value_to_double(&gyro[0]);
     gv.data[1] = sensor_value_to_double(&gyro[1]);
     gv.data[2] = sensor_value_to_double(&gyro[2]);
-
-    // Init filter at 100 Hz.
-    drv->init_handler(100.0, drv->config);
 
     // ZSL_INSTR_START(ns);
     drv->feed_handler(&av, &mv, &gv, NULL, &q, drv->config);
