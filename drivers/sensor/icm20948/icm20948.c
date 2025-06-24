@@ -6,26 +6,18 @@
 
 #define DT_DRV_COMPAT invensense_icm20948
 
-//#include <zephyr/init.h>
-//#include <zephyr/sys/byteorder.h>
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/logging/log.h>
 
 #include "icm20948.h"
+#include "icm20948_i2c.h"
 //#include "icm20948_reg.h"
-#include "icm20948_utils.h"
-/* #include "icm20948_setup.h"
-#include "icm20948_spi.h" */
 
 LOG_MODULE_REGISTER(ICM20948, CONFIG_SENSOR_LOG_LEVEL);
 
 /* static const uint16_t icm20948_gyro_sensitivity_x10[] = {
 	1310, 655, 328, 164
 }; */
-
-ICM_20948_Device_t myICM;
-// Set full scale ranges for both acc and gyr
-ICM_20948_fss_t myfss;
 
 /* see "Accelerometer Measurements" section from register map description */
 static void icm20948_convert_accel(struct sensor_value *val,
@@ -37,19 +29,19 @@ static void icm20948_convert_accel(struct sensor_value *val,
 	switch (fss)
 	{
 	case 0:
-	  conv_val = ((float)raw_val) / 16.384;
+	  conv_val = ((float)raw_val) / 16.384f;
 	  break;
 	case 1:
-	  conv_val = ((float)raw_val) / 8.192;
+	  conv_val = ((float)raw_val) / 8.192f;
 	  break;
 	case 2:
-	  conv_val = ((float)raw_val) / 4.096;
+	  conv_val = ((float)raw_val) / 4.096f;
 	  break;
 	case 3:
-	  conv_val = ((float)raw_val) / 2.048;
+	  conv_val = ((float)raw_val) / 2.048f;
 	  break;
 	default:
-	  return 0;
+	  conv_val = 0;
 	  break;
 	}
 
@@ -79,16 +71,16 @@ static void icm20948_convert_gyro(struct sensor_value *val,
 	  conv_val = ((float)raw_val) / 131;
 	  break;
 	case 1:
-	  conv_val = ((float)raw_val) / 65.5;
+	  conv_val = ((float)raw_val) / 65.5f;
 	  break;
 	case 2:
-	  conv_val = ((float)raw_val) / 32.8;
+	  conv_val = ((float)raw_val) / 32.8f;
 	  break;
 	case 3:
-	  conv_val = ((float)raw_val) / 16.4;
+	  conv_val = ((float)raw_val) / 16.4f;
 	  break;
 	default:
-	  return 0;
+	  conv_val = 0;
 	  break;
 	}
 	val->val1 = (int32_t)conv_val; 
@@ -108,7 +100,7 @@ static inline void icm20948_convert_temp(struct sensor_value *val,
 					 int16_t raw_val)
 {
 	float conv_val;
-	conv_val = (float)raw_val / 333.87;
+	conv_val = (float)raw_val / 333.87f;
 /* 	val->val1 = (((int64_t)raw_val * 100) / 333) + 87;
 	val->val2 = ((((int64_t)raw_val * 100) % 207) * 1000000) / 207; */
 
@@ -129,7 +121,7 @@ static inline void icm20948_convert_magn(struct sensor_value *val,
 	int16_t raw_val)
 {
 	float conv_val;
-	conv_val = (float)raw_val * 0.15;
+	conv_val = (float)raw_val * 0.15f;
 	
 	val->val1 = (int32_t)conv_val; 
     val->val2 = (int32_t)((conv_val - val->val1) * 1000000); 
@@ -261,10 +253,10 @@ static int icm20948_sample_fetch(const struct device *dev,
 				 enum sensor_channel chan)
 {
 	struct icm20948_data *drv_data = dev->data;
-	//const struct icm20948_config *cfg = dev->config;
-	ICM_20948_AGMT_t agmt = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0}};
+	ICM_20948_Device_t *driver = &(drv_data->driver);
+	ICM_20948_AGMT_t agmt = {0};
 
-	 ICM_20948_Status_e ret_gmt = ICM_20948_get_agmt(&myICM, &agmt);
+	 ICM_20948_Status_e ret_gmt = ICM_20948_get_agmt(driver, &agmt);
 	if (ret_gmt == ICM_20948_Stat_Ok){
 		drv_data->accel_x = agmt.acc.axes.x;
 		drv_data->accel_y = agmt.acc.axes.y;
@@ -287,7 +279,7 @@ static int icm20948_attr_set(const struct device *dev,
 			     enum sensor_attribute attr,
 			     const struct sensor_value *val)
 {
-	struct icm20948_data *drv_data = dev->data;
+	//struct icm20948_data *drv_data = dev->data;
 
 	__ASSERT_NO_MSG(val != NULL);
 
@@ -354,7 +346,7 @@ static int icm20948_attr_get(const struct device *dev,
 			     enum sensor_attribute attr,
 			     struct sensor_value *val)
 {
-	const struct icm20948_data *drv_data = dev->data;
+	//const struct icm20948_data *drv_data = dev->data;
 
 	__ASSERT_NO_MSG(val != NULL);
 
@@ -399,22 +391,20 @@ static int icm20948_attr_get(const struct device *dev,
 static int icm20948_data_init(struct icm20948_data *data,
 			      const struct icm20948_config *cfg)
 {
+	memset(&data->driver, 0, sizeof(data->driver));
 	data->accel_x = 0;
 	data->accel_y = 0;
 	data->accel_z = 0;
+	data->accel_hz = 0;
+	data->accel_fss = 0;
+
 	data->temp = 0;
 	data->gyro_x = 0;
 	data->gyro_y = 0;
 	data->gyro_z = 0;
-	//data->accel_hz = cfg->accel_hz;
-	//data->gyro_hz = cfg->gyro_hz;
-
-	data->accel_fss = myfss.a;
-	data->gyro_fss =  myfss.g;
-
-	//data->accel_sf = cfg->accel_fs;
-	//data->gyro_sf = cfg->gyro_fs;
-
+	data->gyro_hz = 0;
+	data->gyro_fss =  0;
+	
 	data->magn_x = 0;
 	data->magn_y = 0;
 	data->magn_z = 0;
@@ -425,28 +415,33 @@ static int icm20948_data_init(struct icm20948_data *data,
 	return 0;
 }
 
-
+const struct icm20948_config *gCfg;
 static int icm20948_init(const struct device *dev)
 {
 	struct icm20948_data *drv_data = dev->data;
 	const struct icm20948_config *cfg = dev->config;
-	// Now declare the structure that represents the ICM.
+	gCfg = cfg;
+	//ICM_20948_Device_t *driver = &(drv_data->driver);
+	int res = 0;
 	
-	ICM_20948_init(&myICM, I2C_PORT, ICM20948_I2C_ADDR);
-
-	if (!device_is_ready(cfg->i2c.bus)) {
+	if (!device_is_ready(cfg->bus.i2c.bus)) {
 		LOG_ERR("Bus device is not ready");
 		return -ENODEV;
 	}
 
-	myfss.a = gpm2;   // (ICM_20948_ACCEL_CONFIG_FS_SEL_e)
-	myfss.g = dps250; // (ICM_20948_GYRO_CONFIG_1_FS_SEL_e)
-	ICM_20948_set_FSS(myfss);
+    if (!cfg->bus.i2c.bus) {
+        LOG_ERR("I2C device not valid.");
+        return ICM_20948_Stat_Err;
+    }
 
-	icm20948_data_init(drv_data, cfg);
-	//icm20948_sensor_init(dev);
+	res |= icm20948_data_init(drv_data, cfg);
+	
+	if (icm20948_sensor_init(dev)) {
+		LOG_ERR("could not initialize sensor");
+		return -EIO;
+	}
 
-
+	res |= icm20948_turn_on_sensor(dev);
 
 #ifdef CONFIG_ICM20948_TRIGGER
 	if (icm20948_init_interrupt(dev) < 0) {
@@ -457,7 +452,7 @@ static int icm20948_init(const struct device *dev)
 
 	LOG_DBG("Initialize interrupt done");
 
-	return 0;
+	return res;
 }
 
 static DEVICE_API(sensor, icm20948_driver_api) = {
@@ -470,46 +465,21 @@ static DEVICE_API(sensor, icm20948_driver_api) = {
 	.attr_get = icm20948_attr_get,
 };
 
-/* //.gpio_int = GPIO_DT_SPEC_INST_GET(index, int_gpios),    
-#define ICM20948_DEFINE_CONFIG(index)					\
-	static const struct icm20948_config icm20948_cfg_##index = {	\
-		.i2c = I2C_DT_SPEC_INST_GET(index),			\	
-		.accel_hz = DT_INST_PROP(index, accel_hz),		\
-		.gyro_hz = DT_INST_PROP(index, gyro_hz),		\
-		.accel_fs = DT_INST_ENUM_IDX(index, accel_fs),		\
-		.gyro_fs = DT_INST_ENUM_IDX(index, gyro_fs),		\
-	};
+/* Initializes the bus members for an instance on a SPI bus. */
+/* #define ICM20948_CONFIG_SPI(inst)                                                                  \
+	{.bus.spi = SPI_DT_SPEC_INST_GET(inst, ICM20948_SPI_CFG, 0),                               \
+	 .bus_io = &icm20948_bus_io_spi} */
 
-
-#define ICM20948_INIT(index)						\
-	ICM20948_DEFINE_CONFIG(index);					\
-	static struct icm20948_data icm20948_driver_##index;		\
-	SENSOR_DEVICE_DT_INST_DEFINE(index, icm20948_init,		\
-			    NULL,					\
-			    &icm20948_driver_##index,			\
-			    &icm20948_cfg_##index, POST_KERNEL,		\
-			    CONFIG_SENSOR_INIT_PRIORITY,		\
-			    &icm20948_driver_api);
-
-DT_INST_FOREACH_STATUS_OKAY(ICM20948_INIT) */
-
-
-
-
-
-/* 	.accel_hz = DT_INST_PROP(index, accel_hz),		\
-	.gyro_hz = DT_INST_PROP(index, gyro_hz),		\
-	.accel_fs = DT_INST_ENUM_IDX(index, accel_fs),		\
-	.gyro_fs = DT_INST_ENUM_IDX(index, gyro_fs),		\ */
-
-
-
-
-	
+/* Initializes the bus members for an instance on an I2C bus. */
+/* #define ICM20948_CONFIG_I2C(inst)                                                                  \
+	{.bus.i2c = I2C_DT_SPEC_INST_GET(inst),                                                    \
+	 .bus_io = &icm20948_bus_io_i2c} */
+	 	
 #define INIT_ICM20948_INST(inst)						\
 	static struct icm20948_data icm20948_data_##inst;			\
 	static const struct icm20948_config icm20948_cfg_##inst = {	\
-	.i2c = I2C_DT_SPEC_INST_GET(inst),				\
+				.bus.i2c = I2C_DT_SPEC_INST_GET(inst),                                                    \
+	 			.bus_io = &icm20948_bus_io_i2c \
 	};								\
 									\
 	SENSOR_DEVICE_DT_INST_DEFINE(inst, icm20948_init, NULL,		\
